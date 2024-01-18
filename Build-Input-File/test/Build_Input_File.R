@@ -7,7 +7,8 @@ library(r4ss)
 library(plyr)
 library(dplyr)
 library(purrr)
-
+#install.packages(this.path)
+library(this.path)
 ## Clear environment if needed
 ## rm(list=ls())
 
@@ -21,26 +22,32 @@ NRecModel <- 1 ## Set number of recruitment models = 1
 RecruitType <- c(14) ## Set recruitment model vector with NRecModel elements
 M0 <- 0.54 ## Set age-0 natural mortality rate
 
+## Create a variable for the main directory to use to build paths later on
+main.dir <- this.path::here(..=2)
+
 ## Set Rscripts folder
-script.dir="C:\\Users\\jon.brodziak\\Desktop\\2024 WCNPO MLS Rebuilding\\Rscripts"
-
+#script.dir="C:\\Users\\jon.brodziak\\Desktop\\2024 WCNPO MLS Rebuilding\\Rscripts"
+script.dir = file.path(main.dir, "Rscripts")
 ## Set bootstrap file path
-boot_file <- "C:\\Users\\jon.brodziak\\Desktop\\2024 WCNPO MLS Rebuilding\\Bootstrap-numbers-at-age\\2023_WCNPOMLS.bsn"
-
+#boot_file <- "C:\\Users\\jon.brodziak\\Desktop\\2024 WCNPO MLS Rebuilding\\Bootstrap-numbers-at-age\\2023_WCNPOMLS.bsn"
+boot_file <- file.path(main.dir, "Bootstrap-numbers-at-age", "2023_WCNPOMLS.bsn")
 ## Set base case model folder
-model.dir <- c("C:\\Users\\jon.brodziak\\Desktop\\2024 WCNPO MLS Rebuilding\\base")
-
+#model.dir <- c("C:\\Users\\jon.brodziak\\Desktop\\2024 WCNPO MLS Rebuilding\\base")
+model.dir <- file.path(main.dir, "base")
 ## Source SS_Agepro.R script
 source(file.path(script.dir,"SS_to_Agepro.R"))
               
 ## Extract SSInput with SS_To_Agepro.R script			  
-SSInput <- SS_To_Agepro(model.dir=model.dir, script.dir=script.dir, endyr=2020, TimeStep="Year")
+SSInput <- SS_To_Agepro(model.dir=model.dir, script.dir=script.dir, endyr=endyr, TimeStep=TimePeriod)
 
 ## Copy SSInput into SaveInput to save it
 SaveInput <- SSInput
 
 ## Adjust SSInput to the fleets you want to include: for this I am only choosing the fleets with unique selectivities, then for the fleets with the same selectivities, adding up the catch proportions for the new fleet
-UniqueFleets <- which(!duplicated(SSInput$Fishery_SelAtAge))
+UniqueFleets<- SSInput$Fishery_SelAtAge %>%
+  filter(Yr == 2020) %>%
+  distinct(across(-c(Yr, Fleet)), .keep_all = TRUE) %>%
+  select(Fleet) %>% pull()
 
 ## Identify set of unique fleets
 duplicated_rows = list()
@@ -52,6 +59,13 @@ for (i in 1:length(UniqueFleets)){
 
 ## Set fishery selectivity at age for unique fleets
 SSInput$Fishery_SelAtAge <- SSInput$Fishery_SelAtAge[UniqueFleets,]
+##Average your SelAtAge across your interested years
+SSInput$Fishery_SelAtAge<-SSInput$Fishery_SelAtAge %>%
+  filter(Fleet %in% UniqueFleets) %>%   ##filter out only the unique fleets
+  filter(Yr %in% YearAvg)  %>% ##save the year/years you want to average the Fishery selectivity over
+  group_by(Fleet) %>%  ## average each age by fleet
+  summarize(across(c(2:16),mean))
+
 
 ## Set number of fleets
 SSInput$Nfleets <- nrow(SSInput$Fishery_SelAtAge)
