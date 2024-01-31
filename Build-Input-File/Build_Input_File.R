@@ -7,7 +7,8 @@ library(r4ss)
 library(plyr)
 library(dplyr)
 library(purrr)
-
+#install.packages(this.path)
+library(this.path)
 ## Clear environment if needed
 ## rm(list=ls())
 
@@ -27,22 +28,26 @@ SSBFac <- 1000 ## SSBFac is a divisor to convert kg of SSB in AGEPRO to recruit 
 MaxRecObs <- 100 ## Maximum number of recruitment observations in a recruit model
 M0 <- 0.54 ## Set age-0 natural mortality rate to convert age-0.0 fish to age-0.5 fish
 
-## Set Rscripts folder
-script.dir="C:\\Users\\jon.brodziak\\Desktop\\2024 WCNPO MLS Rebuilding\\Rscripts"
+## Create a variable for the main directory to use to build paths later on
+main.dir <- this.path::here(..=2)
 
+## Set Rscripts folder
+#script.dir="C:\\Users\\jon.brodziak\\Desktop\\2024 WCNPO MLS Rebuilding\\Rscripts"
+script.dir = file.path(main.dir, "Rscripts")
 ## Set bootstrap file variables
-boot_file <- "C:\\Users\\jon.brodziak\\Desktop\\2024 WCNPO MLS Rebuilding\\Bootstrap-numbers-at-age\\2023_WCNPOMLS.bsn"
+#boot_file <- "C:\\Users\\jon.brodziak\\Desktop\\2024 WCNPO MLS Rebuilding\\Bootstrap-numbers-at-age\\2023_WCNPOMLS.bsn"
+boot_file <- file.path(main.dir, "Bootstrap-numbers-at-age", "2023_WCNPOMLS.bsn")
 NBoot <- 100
 BootFac = 1000
 
 ## Set base case model folder
-model.dir <- c("C:\\Users\\jon.brodziak\\Desktop\\2024 WCNPO MLS Rebuilding\\base")
-
+#model.dir <- c("C:\\Users\\jon.brodziak\\Desktop\\2024 WCNPO MLS Rebuilding\\base")
+model.dir <- file.path(main.dir, "base")
 ## Source SS_Agepro.R script
 source(file.path(script.dir,"SS_to_Agepro.R"))
               
 ## Extract SSInput with SS_To_Agepro.R script			  
-SSInput <- SS_To_Agepro(model.dir=model.dir, script.dir=script.dir, endyr=2020, TimeStep="Year")
+SSInput <- SS_To_Agepro(model.dir=model.dir, script.dir=script.dir, endyr=endyr, TimeStep=TimePeriod)
 
 ## Copy SSInput into SaveInput to save it
 SaveInput <- SSInput
@@ -239,7 +244,7 @@ source(file.path(script.dir,"AGEPRO_Input.R"))
 
 ## Now write the input file:
 
-AGEPRO_INP(output.dir = "C:\\Users\\jon.brodziak\\Desktop\\2024 WCNPO MLS Rebuilding\\Build-Input-File",
+AGEPRO_INP(output.dir = file.path(main.dir, "Build-Input-File"),
                     boot_file = boot_file,
                     NBoot = NBoot,
                     BootFac = BootFac,
